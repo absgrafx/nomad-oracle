@@ -10,17 +10,20 @@ from dotenv import load_dotenv
 env_path = "/usr/local/etc/renogy/renogy.env"
 load_dotenv(env_path)
 
+# TIMING
+collect_interval = os.getenv("COLLECTION_INTERVAL")  # 5 minutes
+
 # API Credentials
-host = "https://openapi.renogy.com"
+host = os.getenv("RENOGY_HOST")
 sk = os.getenv("SECRET_KEY")
 ak = os.getenv("ACCESS_KEY")
 access_token = "your_access_token"  # Replace or update this dynamically if necessary
 
 # InfluxDB setup
-influx_url = "http://localhost:8086"
-influx_token = "your_influxdb_token"
-influx_org = "your_organization"
-influx_bucket = "power_monitoring"
+influx_url = os.getenv("INFLUX_URL")
+influx_token = os.getenv("INFLUX_TOKEN")
+influx_org = os.getenv("INFLUX_ORG")
+influx_bucket = os.getenv("INFLUX_BUCKET")
 
 client = InfluxDBClient(url=influx_url, token=influx_token, org=influx_org)
 
@@ -63,4 +66,4 @@ def monitor_devices():
 if __name__ == "__main__":
     while True:
         monitor_devices()
-        time.sleep(300)  # Every 5 minutes
+        time.sleep({collect_interval})  

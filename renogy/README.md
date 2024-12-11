@@ -4,10 +4,11 @@
 ```bash
 sudo apt update
 sudo apt install python3 python3-pip
-pip3 install requests schedule influxdb-client
+pip3 install requests python-dotenv influxdb-client
 ```
 
 ## Install InfluxDB 
+* Listening on http://localhost:8086
 ```bash
 wget -qO- https://repos.influxdata.com/influxdb.key | sudo apt-key add -
 source /etc/os-release
@@ -20,8 +21,16 @@ sudo systemctl unmask influxdb
 sudo systemctl enable influxdb
 sudo systemctl start influxdb
 ```
+* configure influxdb
+```bash
+influx
+CREATE DATABASE power_monitoring
+CREATE USER admin WITH PASSWORD 'admin' WITH ALL PRIVILEGES
+exit; 
+```
 
 ## Install Grafana 
+* Listening on http://localhost:3000
 ```bash 
 wget -q -O - https://packages.grafana.com/gpg.key | sudo apt-key add -
 echo "deb https://packages.grafana.com/oss/deb stable main" | sudo tee -a /etc/apt/sources.list.d/grafana.list
