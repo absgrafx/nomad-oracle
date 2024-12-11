@@ -2,15 +2,19 @@ import requests
 import time
 import hashlib
 import hmac
-import json
-from datetime import datetime
+import os
 from influxdb_client import InfluxDBClient, Point, WriteOptions
+from dotenv import load_dotenv
+
+# Load environment variables
+env_path = "/usr/local/etc/renogy/renogy.env"
+load_dotenv(env_path)
 
 # API Credentials
 host = "https://openapi.renogy.com"
-sk = "your_secret_key"
-ak = "your_access_key"
-access_token = "your_access_token"
+sk = os.getenv("SECRET_KEY")
+ak = os.getenv("ACCESS_KEY")
+access_token = "your_access_token"  # Replace or update this dynamically if necessary
 
 # InfluxDB setup
 influx_url = "http://localhost:8086"

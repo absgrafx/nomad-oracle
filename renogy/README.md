@@ -31,11 +31,24 @@ sudo systemctl enable grafana-server
 sudo systemctl start grafana-server
 ```
 
+## Setup external environment file (that is not cloned)
+```bash
+sudo mkdir -p /usr/local/etc/renogy
+sudo nano /usr/local/etc/renogy/renogy.env
+# add the following lines
+ACCESS_KEY=your_access_key
+SECRET_KEY=your_secret_key
+sudo chmod 600 /usr/local/etc/renogy/renogy.env
+pip3 install python-dotenv
+python3 /usr/local/src/nomad-oracle/renogy/renogyquery.py
+```
+
+
 ## Implement Python Query 
 git clone the repository 
 ```bash
 cd /usr/local/src
-git clone git@github.com:absgrafx/nomad-oracle.git
+git clone https://github.com/absgrafx/nomad-oracle.git
 cd nomad-oracle/renogy
 ```
 `renogyquery.py`
