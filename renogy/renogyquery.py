@@ -111,10 +111,10 @@ def get_device_data(device_id):
         return None
 
 # Write to InfluxDB
-def write_to_influx(data):
+def write_to_influx(device_name, data):
     """Write transformed data to InfluxDB."""
     with client.write_api(write_options=WriteOptions(batch_size=1)) as write_api:
-        point = Point("PowerMonitoring").tag("device", "Combined")
+        point = Point("PowerMonitoring").tag("device", device_name)  # Use the provided device name
         for key, value in data.items():
             if isinstance(value, (int, float)):
                 point.field(key, value)
@@ -137,7 +137,7 @@ def monitor_devices():
                 transformed_data.update(transform_data(raw_data, INVERTER_SHUNT_FIELDS))
 
     if transformed_data:
-        write_to_influx(transformed_data)
+        write_to_influx(device_name, transformed_data)
 
 # Main Loop
 if __name__ == "__main__":
