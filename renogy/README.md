@@ -3,7 +3,7 @@
 ## RapsberryPi Dependencies 
 ```bash
 sudo apt update
-sudo apt install python3 python3-pip
+sudo apt install -y git python3 python3-pip
 pip3 install requests python-dotenv influxdb-client
 ```
 
@@ -55,12 +55,8 @@ sudo systemctl start grafana-server
 ```bash
 sudo mkdir -p /usr/local/etc/renogy
 sudo nano /usr/local/etc/renogy/renogy.env
-# add the following lines
-ACCESS_KEY=your_access_key
-SECRET_KEY=your_secret_key
+# add the lines shown in .env.example file in the repo
 sudo chmod 600 /usr/local/etc/renogy/renogy.env
-pip3 install python-dotenv
-python3 /usr/local/src/nomad-oracle/renogy/renogyquery.py
 ```
 
 
@@ -70,15 +66,36 @@ git clone the repository
 cd /usr/local/src
 git clone https://github.com/absgrafx/nomad-oracle.git
 cd nomad-oracle/renogy
+python3 /usr/local/src/nomad-oracle/renogy/renogyquery.py
 ```
-`renogyquery.py`
 
-## Automate the script 
+## Create the query service 
+* Create the service File 
 ```bash
-crontab -e
-@reboot python3 /usr/local/src/renogyquery.py &
+sudo nano /etc/systemd/system/renogyquery.service
 ```
+* Add the following content & Save the file 
+```bash
+[Unit]
+Description=Renogy Query Script
+After=network.target
 
+[Service]
+WorkingDirectory=/usr/local/src/nomad-oracle/renogy
+ExecStart=/usr/bin/python3 /usr/local/src/nomad-oracle/renogy/renogyquery.py
+Restart=always
+EnvironmentFile=/usr/local/etc/renogy/renogy.env
+
+[Install]
+WantedBy=multi-user.target
+```
+* Enable and start the service 
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable renogyquery
+sudo systemctl start renogyquery
+sudo systemctl status renogyquery
+```
 
 ## Setup Grafana Dashboard 
 Configure InfluxDB as a Data Source:
@@ -89,3 +106,36 @@ Configure InfluxDB as a Data Source:
 	•	Use queries like from(bucket: "power_monitoring") |> range(start: -5m) to fetch recent data.
 
 
+## **Optional** -  Securing the Renogy System Service
+* Add Service user "renogy" and change permissions for env file and source code
+```bash
+sudo useradd -r -s /bin/false renogy
+sudo chown renogy:renogy /usr/local/etc/renogy/renogy.env
+sudo chmod 600 /usr/local/etc/renogy/renogy.env
+sudo chown -R renogy:renogy /usr/local/src/nomad-oracle/renogy
+sudo chown -R renogy:renogy /usr/local/src/nomad-oracle/renogy
+```
+* Modify the service file to add User and Group
+```bash
+sudo nano /etc/systemd/system/renogyquery.service
+```
+* Add the following content to the [Service] section & Save the file 
+```bash
+User=renogy
+Group=renogy
+```
+* Enable and start the service 
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart renogyquery.service
+```
+## **Optional** - Compile the Python script to a binary
+* Install PyInstaller (output is in the /dist folder)
+```bash	
+pip3 install pyinstaller
+pyinstaller --onefile renogyquery.py
+```
+* Modify the service file to point to the binary
+```bash	
+sudo nano /etc/systemd/system/renogyquery.service
+```
