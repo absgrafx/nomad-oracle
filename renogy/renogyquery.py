@@ -110,20 +110,12 @@ def get_device_data(device_id):
         print(f"Error: {response.status_code} - {response.text}")
         return None
 
-# Write to InfluxDB
-def write_to_influx(device_name, data):
-    """Write transformed data to InfluxDB."""
-    with client.write_api(write_options=WriteOptions(batch_size=1)) as write_api:
-        point = Point("PowerMonitoring").tag("device", device_name)  # Use the provided device name
-        for key, value in data.items():
-            if isinstance(value, (int, float)):
-                point.field(key, value)
-        write_api.write(bucket=influx_bucket, record=point)
 
 # Monitor Devices
 def monitor_devices():
     """Query and log data for all devices."""
     devices = load_devices()
+    combined_data = []
 
     for device_name, device_id in devices.items():
         raw_data = get_device_data(device_id)
@@ -135,8 +127,28 @@ def monitor_devices():
             elif device_name == "Inverter":
                 transformed_data = transform_data(raw_data, INVERTER_SHUNT_FIELDS)
 
+            # Append transformed data with the device name
             if transformed_data:
-                write_to_influx(device_name, transformed_data)  # Write each device's data separately
+                combined_data.append({"device": device_name, "data": transformed_data})
+
+    if combined_data:
+        write_combined_to_influx(combined_data)
+
+
+# Write Combined Data to InfluxDB
+def write_combined_to_influx(combined_data):
+    """Write combined data to InfluxDB with proper device tagging."""
+    with client.write_api(write_options=WriteOptions(batch_size=1)) as write_api:
+        for entry in combined_data:
+            device_name = entry["device"]
+            data = entry["data"]
+
+            # Create a Point for each device's data
+            point = Point("PowerMonitoring").tag("device", device_name)
+            for key, value in data.items():
+                if isinstance(value, (int, float)):
+                    point.field(key, value)
+            write_api.write(bucket=influx_bucket, record=point)
 
 # Main Loop
 if __name__ == "__main__":
