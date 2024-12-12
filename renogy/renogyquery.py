@@ -124,20 +124,19 @@ def write_to_influx(device_name, data):
 def monitor_devices():
     """Query and log data for all devices."""
     devices = load_devices()
-    transformed_data = {}
 
     for device_name, device_id in devices.items():
         raw_data = get_device_data(device_id)
         if raw_data:
             if device_name == "Solar":
-                transformed_data.update(transform_data(raw_data, SOLAR_CONTROLLER_FIELDS))
+                transformed_data = transform_data(raw_data, SOLAR_CONTROLLER_FIELDS)
             elif device_name == "Main":
-                transformed_data.update(transform_data(raw_data, MAIN_SHUNT_FIELDS))
+                transformed_data = transform_data(raw_data, MAIN_SHUNT_FIELDS)
             elif device_name == "Inverter":
-                transformed_data.update(transform_data(raw_data, INVERTER_SHUNT_FIELDS))
+                transformed_data = transform_data(raw_data, INVERTER_SHUNT_FIELDS)
 
-    if transformed_data:
-        write_to_influx(device_name, transformed_data)
+            if transformed_data:
+                write_to_influx(device_name, transformed_data)  # Write each device's data separately
 
 # Main Loop
 if __name__ == "__main__":
