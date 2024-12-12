@@ -47,6 +47,7 @@ def get_device_data(device_id):
         "X-Sign": sign,
         "X-Timestamp": str(timestamp),
         "X-Ak": ak,
+        "Access-Key": ak,  # Add this line
     }
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
