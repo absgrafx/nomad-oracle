@@ -1,0 +1,950 @@
+{
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "grafana",
+            "uid": "-- Grafana --"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        }
+      ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 1,
+    "id": 1,
+    "links": [],
+    "panels": [
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "fe6pg0n8yilmof"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Watts SolarCharger"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "orange",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "Watts MainShunt"
+              },
+              "properties": [
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "blue",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "id": 3,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.4.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "fe6pg0n8yilmof"
+            },
+            "query": "from(bucket: \"power_monitoring\")\n  |> range(start: -12h)  // Adjust time range as needed\n  |> filter(fn: (r) => r.device == \"Solar\")\n  |> filter(fn: (r) => r._field == \"AmpsSolar\" or r._field == \"VoltsSolar\" or r._field == \"WattsSolar\")\n  |> group(columns: [\"_field\", \"device\"])  // Group by field and device for better series separation\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])  // Keep only relevant fields\n  |> yield(name: \"voltage_data\")",
+            "refId": "Voltage"
+          }
+        ],
+        "title": "Solar Generation",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "fe6pg0n8yilmof"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "#00000000",
+                  "value": null
+                },
+                {
+                  "color": "green",
+                  "value": 0
+                }
+              ]
+            },
+            "unit": "watt"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 6,
+          "x": 12,
+          "y": 0
+        },
+        "id": 4,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.4.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "fe6pg0n8yilmof"
+            },
+            "query": "from(bucket: \"power_monitoring\")\n  |> range(start: -3h)  // Adjust time range as needed\n  |> filter(fn: (r) => r.device == \"Solar\")\n  |> filter(fn: (r) => r._field == \"WattsMPPT\" or r._field == \"WattsSolar\")\n  |> group(columns: [\"_field\", \"device\"])  // Group by field and device for better series separation\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])  // Keep only relevant fields\n  |> yield(name: \"chargerwatts\")",
+            "refId": "Voltage"
+          }
+        ],
+        "title": "Solar Watt Generation",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "fe6pg0n8yilmof"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "max": 120,
+            "min": 32,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "#00000000",
+                  "value": null
+                },
+                {
+                  "color": "dark-blue",
+                  "value": 0
+                },
+                {
+                  "color": "blue",
+                  "value": 35
+                },
+                {
+                  "color": "green",
+                  "value": 40
+                },
+                {
+                  "color": "#EAB839",
+                  "value": 90
+                },
+                {
+                  "color": "dark-red",
+                  "value": 110
+                }
+              ]
+            },
+            "unit": "fahrenheit"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 6,
+          "x": 18,
+          "y": 0
+        },
+        "id": 5,
+        "options": {
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true,
+          "sizing": "auto"
+        },
+        "pluginVersion": "11.4.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "fe6pg0n8yilmof"
+            },
+            "query": "from(bucket: \"power_monitoring\")\n  |> range(start: -6h)  // Adjust time range\n  |> filter(fn: (r) => r.device == \"Solar\")\n  |> filter(fn: (r) => r._field == \"BatteryTemp\")  // Focus on temperature\n  |> yield(name: \"ConvertedTemperature\")",
+            "refId": "Voltage"
+          }
+        ],
+        "title": "Battery Temp",
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "fe6pg0n8yilmof"
+        },
+        "description": "Production (MPPT and Charger) less what's feeding the battery",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "watt"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 7
+        },
+        "id": 9,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.4.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "fe6pg0n8yilmof"
+            },
+            "query": "from(bucket: \"power_monitoring\")\n  |> range(start: -3h)  // Adjust time range as needed\n\n  |> filter(fn: (r) => \n      not (\n          (r.device == \"Inverter\" and r._field == \"AmpsMPPT\") or \n          (r.device == \"Inverter\" and r._field == \"WattsMain\")\n      )  // Exclude specific rows\n  )\n  |> filter(fn: (r) => r.device == \"Solar\" or r.device == \"Inverter\" or r.device == \"Main\")\n  |> filter(fn: (r) => r._field == \"AmpsMPPT\" or r._field == \"VoltsMPPT\" or r._field == \"WattsMain\" or r._field == \"WattsInv\" or r._field == \"VoltsMain\" or r._field == \"VoltsInv\")\n\n  |> map(fn: (r) => ({\n      r with \n      _field: if r._field == \"WattsMain\" then \"AmpsMain\" else if r._field == \"WattsInv\" then \"AmpsInv\" else r._field\n  }))\n\n  |> aggregateWindow(every: 1m, fn: mean, createEmpty: false)  // Aggregate data into 1-minute intervals\n  |> group()  // Remove any residual grouping to unify the data\n\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")  // Align fields into columns\n\n  |> map(fn: (r) => ({\n      r with \n      WattsMPPT: if exists r.AmpsMPPT and exists r.VoltsMPPT then (r.AmpsMPPT * r.VoltsMPPT)  else float(v: 0.0),\n      WattsMain: if exists r.AmpsMain and exists r.VoltsMain then (r.AmpsMain * r.VoltsMain)  else float(v: 0.0),\n      WattsInv: if exists r.AmpsInv and exists r.VoltsInv then (r.AmpsInv * r.VoltsInv)  else float(v: 0.0)\n  }))\n\n  |> keep(columns: [\"_time\", \"WattsMPPT\", \"WattsMain\", \"WattsInv\"])  // Keep only relevant columns\n\n  |> yield(name: \"wattage_load\")",
+            "refId": "Voltage"
+          }
+        ],
+        "title": "Load Power ",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "fe6pg0n8yilmof"
+        },
+        "description": "Production (MPPT and Charger) less what's feeding the battery",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "watt"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 8,
+          "x": 12,
+          "y": 7
+        },
+        "id": 11,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.4.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "fe6pg0n8yilmof"
+            },
+            "query": "from(bucket: \"power_monitoring\")\n  |> range(start: -3h)  // Adjust time range as needed\n\n  |> filter(fn: (r) => \n      not (\n          (r.device == \"Inverter\" and r._field == \"AmpsMPPT\") or \n          (r.device == \"Inverter\" and r._field == \"WattsMain\")\n      )  // Exclude specific rows\n  )\n  |> filter(fn: (r) => r.device == \"Solar\" or r.device == \"Inverter\" or r.device == \"Main\")\n  |> filter(fn: (r) => r._field == \"AmpsMPPT\" or r._field == \"VoltsMPPT\" or r._field == \"WattsMain\" or r._field == \"WattsInv\" or r._field == \"VoltsMain\" or r._field == \"VoltsInv\")\n\n  |> map(fn: (r) => ({\n      r with \n      _field: if r._field == \"WattsMain\" then \"AmpsMain\" else if r._field == \"WattsInv\" then \"AmpsInv\" else r._field\n  }))\n\n  |> aggregateWindow(every: 1m, fn: mean, createEmpty: false)  // Aggregate data into 1-minute intervals\n  |> group()  // Remove any residual grouping to unify the data\n\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")  // Align fields into columns\n\n  |> map(fn: (r) => ({\n      r with \n      WattsMPPT: if exists r.AmpsMPPT and exists r.VoltsMPPT then (r.AmpsMPPT * r.VoltsMPPT)  else float(v: 0.0),\n      WattsMain: if exists r.AmpsMain and exists r.VoltsMain then (r.AmpsMain * r.VoltsMain)  else float(v: 0.0),\n      WattsInv: if exists r.AmpsInv and exists r.VoltsInv then (r.AmpsInv * r.VoltsInv)  else float(v: 0.0)\n  }))\n\n  |> keep(columns: [\"_time\", \"WattsMPPT\", \"WattsMain\", \"WattsInv\"])  // Keep only relevant columns\n\n  |> yield(name: \"wattage_load\")",
+            "refId": "Voltage"
+          }
+        ],
+        "title": "Load Power ",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "fe6pg0n8yilmof"
+        },
+        "description": "Production (MPPT and Charger) less what's feeding the battery",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "watt"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 4,
+          "x": 20,
+          "y": 7
+        },
+        "id": 10,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.4.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "fe6pg0n8yilmof"
+            },
+            "query": "from(bucket: \"power_monitoring\")\n  |> range(start: -3h)  // Adjust time range as needed\n\n  |> filter(fn: (r) => \n      not (\n          (r.device == \"Inverter\" and r._field == \"AmpsMPPT\") or \n          (r.device == \"Inverter\" and r._field == \"WattsMain\")\n      )  // Exclude specific rows\n  )\n  |> filter(fn: (r) => r.device == \"Solar\" or r.device == \"Inverter\" or r.device == \"Main\")\n  |> filter(fn: (r) => r._field == \"AmpsMPPT\" or r._field == \"WattsMain\" or r._field == \"WattsInv\" or r._field == \"VoltsMain\")\n\n  |> map(fn: (r) => ({\n      r with \n      _field: if r._field == \"WattsMain\" then \"AmpsMain\" else if r._field == \"WattsInv\" then \"AmpsInv\" else r._field\n  }))\n\n  |> aggregateWindow(every: 1m, fn: mean, createEmpty: false)  // Aggregate data into 1-minute intervals\n  |> group()  // Remove any residual grouping to unify the data\n\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")  // Align fields into columns\n\n  |> map(fn: (r) => ({\n      r with \n      WattsLoad: if exists r.AmpsInv and exists r.AmpsMPPT and exists r.AmpsMain then ((r.AmpsInv + r.AmpsMPPT) - r.AmpsMain)*r.VoltsMain else float(v: 0.0)\n  }))\n\n  |> keep(columns: [\"_time\", \"WattsLoad\"])  // Keep only relevant columns\n\n  |> yield(name: \"wattage_load\")",
+            "refId": "Voltage"
+          }
+        ],
+        "title": "Load Power ",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "fe6pg0n8yilmof"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "smooth",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "area"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "transparent",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 11
+                },
+                {
+                  "color": "orange",
+                  "value": 11.7
+                },
+                {
+                  "color": "green",
+                  "value": 12.8
+                },
+                {
+                  "color": "blue",
+                  "value": 14
+                },
+                {
+                  "color": "dark-red",
+                  "value": 14.6
+                }
+              ]
+            },
+            "unit": "volt"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 14
+        },
+        "id": 1,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.4.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "fe6pg0n8yilmof"
+            },
+            "query": "from(bucket: \"power_monitoring\")\n  |> range(start: -3h)  // Adjust time range as needed\n  |> filter(fn: (r) => r.device == \"Solar\" or r.device == \"Inverter\" or r.device == \"Main\")\n  |> filter(fn: (r) => r._field == \"VoltsMPPT\" or r._field == \"VoltsInv\" or r._field == \"VoltsMain\")\n  |> group(columns: [\"_field\", \"device\"])  // Group by field and device for better series separation\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])  // Keep only relevant fields\n  |> yield(name: \"voltage_data\")",
+            "refId": "Voltage"
+          }
+        ],
+        "title": "Voltage",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "fe6pg0n8yilmof"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "fixedColor": "green",
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "transparent",
+                  "value": null
+                },
+                {
+                  "color": "dark-red",
+                  "value": 0
+                },
+                {
+                  "color": "orange",
+                  "value": 11.6
+                },
+                {
+                  "color": "#EAB839",
+                  "value": 12.5
+                },
+                {
+                  "color": "green",
+                  "value": 12.8
+                },
+                {
+                  "color": "blue",
+                  "value": 14
+                },
+                {
+                  "color": "red",
+                  "value": 14.8
+                }
+              ]
+            },
+            "unit": "volt"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 12,
+          "y": 14
+        },
+        "id": 2,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.4.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "fe6pg0n8yilmof"
+            },
+            "query": "from(bucket: \"power_monitoring\")\n  |> range(start: -3h)  // Adjust time range as needed\n  |> filter(fn: (r) => r.device == \"Solar\" or r.device == \"Inverter\" or r.device == \"Main\")\n  |> filter(fn: (r) => r._field == \"VoltsMPPT\" or r._field == \"VoltsInv\" or r._field == \"VoltsMain\")\n  |> group(columns: [\"_field\", \"device\"])  // Group by field and device for better series separation\n  |> keep(columns: [\"_time\", \"_value\", \"_field\"])  // Keep only relevant fields\n  |> yield(name: \"voltage_data\")",
+            "refId": "Voltage"
+          }
+        ],
+        "title": "Voltage",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "fe6pg0n8yilmof"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "amp"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 12,
+          "x": 0,
+          "y": 21
+        },
+        "id": 6,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.4.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "fe6pg0n8yilmof"
+            },
+            "query": "from(bucket: \"power_monitoring\")\n  |> range(start: -3h)  // Adjust time range as needed\n  |> filter(fn: (r) => r.device == \"Solar\" or r.device == \"Inverter\" or r.device == \"Main\")\n  |> filter(fn: (r) => r._field == \"AmpsMPPT\" or r._field == \"WattsMain\" or r._field == \"WattsInv\")\n  |> map(fn: (r) => ({\n      r with \n      _field: if r._field == \"WattsMain\" then \"AmpsMain\" else if r._field == \"WattsInv\" then \"AmpsInv\" else r._field\n  }))\n  |> keep(columns: [\"_time\", \"_field\", \"_value\"])  // Keep relevant fields\n  |> yield(name: \"amperage_data\")",
+            "refId": "Voltage"
+          }
+        ],
+        "title": "Amperage",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "fe6pg0n8yilmof"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "amp"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 8,
+          "x": 12,
+          "y": 21
+        },
+        "id": 7,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.4.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "fe6pg0n8yilmof"
+            },
+            "query": "from(bucket: \"power_monitoring\")\n  |> range(start: -3h)  // Adjust time range as needed\n  |> filter(fn: (r) => r.device == \"Solar\" or r.device == \"Inverter\" or r.device == \"Main\")\n  |> filter(fn: (r) => r._field == \"AmpsMPPT\" or r._field == \"WattsMain\" or r._field == \"WattsInv\")\n  |> map(fn: (r) => ({\n      r with \n      _field: if r._field == \"WattsMain\" then \"AmpsMain\" else if r._field == \"WattsInv\" then \"AmpsInv\" else r._field\n  }))\n  |> keep(columns: [\"_time\", \"_field\", \"_value\"])  // Keep relevant fields\n  |> yield(name: \"amperage_data\")",
+            "refId": "Voltage"
+          }
+        ],
+        "title": "Amperage",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "fe6pg0n8yilmof"
+        },
+        "description": "Production (MPPT and Charger) less what's feeding the battery",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "amp"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 7,
+          "w": 4,
+          "x": 20,
+          "y": 21
+        },
+        "id": 8,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "11.4.0",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "fe6pg0n8yilmof"
+            },
+            "query": "from(bucket: \"power_monitoring\")\n  |> range(start: -3h)  // Adjust time range as needed\n\n  |> filter(fn: (r) => \n      not (\n          (r.device == \"Inverter\" and r._field == \"AmpsMPPT\") or \n          (r.device == \"Inverter\" and r._field == \"WattsMain\")\n      )  // Exclude specific rows\n  )\n  |> filter(fn: (r) => r.device == \"Solar\" or r.device == \"Inverter\" or r.device == \"Main\")\n  |> filter(fn: (r) => r._field == \"AmpsMPPT\" or r._field == \"WattsMain\" or r._field == \"WattsInv\")\n\n  |> map(fn: (r) => ({\n      r with \n      _field: if r._field == \"WattsMain\" then \"AmpsMain\" else if r._field == \"WattsInv\" then \"AmpsInv\" else r._field\n  }))\n\n  |> aggregateWindow(every: 1m, fn: mean, createEmpty: false)  // Aggregate data into 1-minute intervals\n  |> group()  // Remove any residual grouping to unify the data\n\n  |> pivot(rowKey: [\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")  // Align fields into columns\n\n  |> map(fn: (r) => ({\n      r with \n      AmpsLoad: if exists r.AmpsInv and exists r.AmpsMPPT and exists r.AmpsMain then (r.AmpsInv + r.AmpsMPPT) - r.AmpsMain else float(v: 0.0)\n  }))\n\n  |> keep(columns: [\"_time\", \"AmpsLoad\"])  // Keep only relevant columns\n\n  |> yield(name: \"amperage_load\")",
+            "refId": "Voltage"
+          }
+        ],
+        "title": "Load Amps ",
+        "type": "stat"
+      }
+    ],
+    "preload": false,
+    "schemaVersion": 40,
+    "tags": [],
+    "templating": {
+      "list": []
+    },
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "RenogyView",
+    "uid": "ee6phchr2uarkb",
+    "version": 34,
+    "weekStart": ""
+  }

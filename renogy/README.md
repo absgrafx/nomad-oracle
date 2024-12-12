@@ -98,13 +98,14 @@ sudo systemctl status renogyquery
 ```
 
 ## Setup Grafana Dashboard 
-Configure InfluxDB as a Data Source:
-	•	In Grafana, go to “Configuration” > “Data Sources” > “Add Data Source” and select InfluxDB.
-	•	Configure the connection using your InfluxDB details.
-	•	Create Panels:
-	•	Add visualizations for system voltage, watts, amperage, battery temperature, and SOC.
-	•	Use queries like from(bucket: "power_monitoring") |> range(start: -5m) to fetch recent data.
-
+* Configure InfluxDB as a Data Source:
+	* In Grafana, go to “Configuration” > “Data Sources” > “Add Data Source” and select InfluxDB.
+	* Configure the connection using your InfluxDB details.
+	* Create Panels:
+	* Add visualizations for system voltage, watts, amperage, battery temperature, and SOC.
+	* Use queries like from(bucket: "power_monitoring") |> range(start: -5m) to fetch recent data.
+* Use the sample file `grafana_renogy_dashboard.json` to import the dashboard 
+	* you will have to modify data source and bucket name to match your setup
 
 ## **Optional** -  Securing the Renogy System Service
 * Add Service user "renogy" and change permissions for env file and source code
