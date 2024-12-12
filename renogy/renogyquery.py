@@ -11,7 +11,7 @@ env_path = "/usr/local/etc/renogy/renogy.env"
 load_dotenv(env_path)
 
 # TIMING
-collect_interval = os.getenv("COLLECTION_INTERVAL")  # 5 minutes
+collect_interval = int(os.getenv("COLLECTION_INTERVAL", 300))  # Default to 5 minutes if not set
 
 # API Credentials
 host = os.getenv("RENOGY_HOST")
@@ -26,6 +26,17 @@ influx_org = os.getenv("INFLUX_ORG")
 influx_bucket = os.getenv("INFLUX_BUCKET")
 
 client = InfluxDBClient(url=influx_url, token=influx_token, org=influx_org)
+
+# Parse devices from .env
+def load_devices():
+    devices_raw = os.getenv("DEVICES")
+    if not devices_raw:
+        raise ValueError("No devices configured in the .env file")
+    devices = {}
+    for pair in devices_raw.split(","):
+        name, device_id = pair.split(":")
+        devices[name.strip()] = device_id.strip()
+    return devices
 
 def get_device_data(device_id):
     timestamp = int(time.time() * 1000)
@@ -53,11 +64,7 @@ def write_to_influx(device_name, data):
         write_api.write(bucket=influx_bucket, record=point)
 
 def monitor_devices():
-    devices = {
-        "Solar Charger": "4721167408096062914",
-        "Main Shunt": "4748103642362861071",
-        "Inverter Shunt": "4775681794258120258",
-    }
+    devices = load_devices()
     for device_name, device_id in devices.items():
         data = get_device_data(device_id)
         if data:
@@ -66,4 +73,4 @@ def monitor_devices():
 if __name__ == "__main__":
     while True:
         monitor_devices()
-        time.sleep({collect_interval})  
+        time.sleep(collect_interval)

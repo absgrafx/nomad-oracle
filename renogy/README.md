@@ -10,24 +10,35 @@ pip3 install requests python-dotenv influxdb-client
 ## Install InfluxDB 
 * Listening on http://localhost:8086
 ```bash
-wget -qO- https://repos.influxdata.com/influxdb.key | sudo apt-key add -
-source /etc/os-release
-test $VERSION_ID = "8" && echo "deb https://repos.influxdata.com/debian jessie stable" | sudo tee /etc/apt/sources.list.d/influxdb.list
-test $VERSION_ID = "9" && echo "deb https://repos.influxdata.com/debian stretch stable" | sudo tee /etc/apt/sources.list.d/influxdb.list
-test $VERSION_ID = "10" && echo "deb https://repos.influxdata.com/debian buster stable" | sudo tee /etc/apt/sources.list.d/influxdb.list
+sudo wget -qO- https://repos.influxdata.com/influxdata-archive_compat.key | sudo gpg --dearmor -o /usr/share/keyrings/influxdata-archive.gpg
+sudo echo "deb [signed-by=/usr/share/keyrings/influxdata-archive.gpg] https://repos.influxdata.com/debian stable main" | sudo tee /etc/apt/sources.list.d/influxdb.list
 sudo apt update
-sudo apt install influxdb
-sudo systemctl unmask influxdb
-sudo systemctl enable influxdb
+sudo apt install -y influxdb2
 sudo systemctl start influxdb
+sudo systemctl enable influxdb
 ```
+
 * configure influxdb
 ```bash
-influx
-CREATE DATABASE power_monitoring
-CREATE USER admin WITH PASSWORD 'admin' WITH ALL PRIVILEGES
-exit; 
+influx setup
 ```
+* You will be prompted to provide:
+	* Username: Admin username
+	* Password: Admin password
+	* Organization Name: e.g., power_org
+	* Bucket Name: e.g., power_monitoring
+	* Retention Period: in Hours, Use 0 for infinite retention
+	* Setup a user token: Use the generated token to authenticate requests to InfluxDB
+
+* Create Token 
+```bash
+influx auth create \
+  --org power_org \
+  --write-buckets \
+  --read-buckets
+```
+* use the org, token and bucket name in the .env file
+
 
 ## Install Grafana 
 * Listening on http://localhost:3000
