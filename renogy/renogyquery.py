@@ -28,6 +28,26 @@ influx_bucket = os.getenv("INFLUX_BUCKET")
 
 client = InfluxDBClient(url=influx_url, token=influx_token, org=influx_org)
 
+# Define fields to process for each device
+SOLAR_CONTROLLER_FIELDS = {
+    "auxiliaryBatteryTemperature": ("BatteryTemp", float, 2),
+    "solarWatts": ("WattsSolar", float, 4),
+    "solarChargingVolts": ("VoltsSolar", float, 4),
+    "solarChargingAmps": ("AmpsSolar", float, 4),
+    "auxiliaryBatteryChargingVolts": ("VoltsMPPT", float, 2),
+    "gridChargeAmps": ("AmpsMPPT", float, 4, lambda v: v / 1000)  # Convert to Amps
+}
+
+MAIN_SHUNT_FIELDS = {
+    "batteryVolts": ("VoltsMain", float, 4),
+    "power": ("WattsMain", float, 4)
+}
+
+INVERTER_SHUNT_FIELDS = {
+    "batteryVolts": ("VoltsInv", float, 4),
+    "power": ("WattsInv", float, 4)
+}
+
 # Parse devices from .env
 def load_devices():
     """Load devices from the environment file."""
@@ -50,6 +70,21 @@ def calc_sign(ts, url, param_str, secret):
     to_sign = f"{ts}.{url}.{param_str}"
     hashed = hmac.new(secret.encode(), to_sign.encode(), hashlib.sha256).digest()
     return base64.b64encode(hashed).decode()
+
+def transform_data(raw_data, field_mapping):
+    """Transform raw data based on field mapping."""
+    transformed = {}
+    for raw_field, (new_field, dtype, precision, *transforms) in field_mapping.items():
+        if raw_field in raw_data:
+            value = raw_data[raw_field]
+            # Apply any transformations
+            for transform in transforms:
+                value = transform(value)
+            try:
+                transformed[new_field] = round(dtype(value), precision)
+            except ValueError:
+                print(f"Error converting field {raw_field} with value {value}")
+    return transformed
 
 # API Call
 def get_device_data(device_id):
@@ -76,10 +111,10 @@ def get_device_data(device_id):
         return None
 
 # Write to InfluxDB
-def write_to_influx(device_name, data):
-    """Write device data to InfluxDB."""
+def write_to_influx(data):
+    """Write transformed data to InfluxDB."""
     with client.write_api(write_options=WriteOptions(batch_size=1)) as write_api:
-        point = Point(device_name).tag("device", device_name)
+        point = Point("PowerMonitoring").tag("device", "Combined")
         for key, value in data.items():
             if isinstance(value, (int, float)):
                 point.field(key, value)
@@ -89,10 +124,20 @@ def write_to_influx(device_name, data):
 def monitor_devices():
     """Query and log data for all devices."""
     devices = load_devices()
+    transformed_data = {}
+
     for device_name, device_id in devices.items():
-        data = get_device_data(device_id)
-        if data:
-            write_to_influx(device_name, data)
+        raw_data = get_device_data(device_id)
+        if raw_data:
+            if device_name == "Solar":
+                transformed_data.update(transform_data(raw_data, SOLAR_CONTROLLER_FIELDS))
+            elif device_name == "Main":
+                transformed_data.update(transform_data(raw_data, MAIN_SHUNT_FIELDS))
+            elif device_name == "Inverter":
+                transformed_data.update(transform_data(raw_data, INVERTER_SHUNT_FIELDS))
+
+    if transformed_data:
+        write_to_influx(transformed_data)
 
 # Main Loop
 if __name__ == "__main__":
