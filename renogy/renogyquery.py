@@ -40,12 +40,12 @@ SOLAR_CONTROLLER_FIELDS = {
 
 MAIN_SHUNT_FIELDS = {
     "batteryVolts": ("VoltsMain", float, 4),
-    "power": ("WattsMain", float, 4)
+    "power": ("AmpsMain", float, 4)
 }
 
 INVERTER_SHUNT_FIELDS = {
     "batteryVolts": ("VoltsInv", float, 4),
-    "power": ("WattsInv", float, 4)
+    "power": ("AmpsInv", float, 4)
 }
 
 # Parse devices from .env
