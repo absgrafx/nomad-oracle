@@ -30,7 +30,7 @@ client = InfluxDBClient(url=influx_url, token=influx_token, org=influx_org)
 
 # Define fields to process for each device
 SOLAR_CONTROLLER_FIELDS = {
-    "auxiliaryBatteryTemperature": ("BatteryTemp", float, 2),
+    "auxiliaryBatteryTemperature": ("BatteryTemp", float, 2, lambda v: (v * 1.8) + 32),  # Convert to Fahrenheit
     "solarWatts": ("WattsSolar", float, 4),
     "solarChargingVolts": ("VoltsSolar", float, 4),
     "solarChargingAmps": ("AmpsSolar", float, 4),
