@@ -140,3 +140,16 @@ pyinstaller --onefile renogyquery.py
 ```bash	
 sudo nano /etc/systemd/system/renogyquery.service
 ```
+
+## TO DO: 
+1. Move to Cloud/AWS (ECS, NativeSaaS, EFS, Etc...)
+1. Fix Python script to ensure all fields are mapped to proper type (watts=power, amps, volts, etc...)
+1. What transformations should be made at the ingestion level to make things easier? 
+	* store Watts, Volts and Amps at the time of ingestion? 
+	* store daily totals for Solar Production and Consumption (separate Influx Bucket)
+1. Add more error handling and logging of python code 
+1. Add function to pull daily data for Solar Production and/or total Consumption (What long term, daily details are needed)? 
+1. Grafana Cloud 
+1. Peplink data from Device and/or InControl to New Dashboard 
+1. Can InfluxDB2 be used as Home Assistant data source (instead of Grafana)? 
+
