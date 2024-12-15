@@ -1,5 +1,26 @@
 # Renogy Build 
 
+![System Design](sysdesign/Rogue1-ElectDist-Simple.jpg)
+
+## Objective: [Renogy System Diagram](/sysdesign/Rogue1-ElecDist-Simple.pdf)
+* Monitor Renogy Solar System and store data in InfluxDB and visualize in Grafana
+
+* 12v Electrical System Components:
+	* 800ah - 4 x 200ah 12v Vatrer LifePO4 Batteries
+	* 1200W Solar - 6 x 200w Renogy Solar Panels (3 parallel sets of 2 panels in series)
+	* "Solar/MPPT" - Renogy Rover 60a MPPT Charge Controller
+	* "Main" - Renogy 300a Smart Shunt on negative battery terminal
+	* "Inv/Conv" - Renogy 300a Smart Shunt on negative inverter terminal
+	* Renogy 3kw Inverter/Converter (A/C pass through)
+* Monitoring Components:
+	* Renogy One Core "Head End" connected to 2 Smart Shunts and MPPT Controller
+	* Renogy API Access via account/API Key 
+	* Raspberry Pi4
+		* Python Script (as systemd service) to pull data from Renogy API, transform and send to InfluxDB 
+		* InfluxDB2
+		* Grafana for visualization / dashboarding 
+
+
 ## RapsberryPi Dependencies 
 ```bash
 sudo apt update
