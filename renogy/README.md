@@ -1,8 +1,8 @@
-# Renogy Build 
+# Renogy Build [Renogy System Diagram](sysdesign/Rogue1-ElectDist-Detail.pdf)
 
 ![System Design](sysdesign/Rogue1-ElectDist-Simple.jpg)
 
-## Objective: [Renogy System Diagram](sysdesign/Rogue1-ElectDist-Simple.pdf)
+## Objective: 
 * Monitor Renogy Solar System and store data in InfluxDB and visualize in Grafana
 
 * 12v Electrical System Components:
