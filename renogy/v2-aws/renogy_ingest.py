@@ -113,7 +113,7 @@ def get_device_data(device_id, host, ak, sk):
     if response.status_code == 200:
         return response.json().get("data")
         logger.info(f"Retrieved data for device {device_id}: {data}")
-
+        print(f"Retrieved data for device {device_id}: {data}")
     else:
         logger.error(f"Error fetching data for device {device_id}: {response.status_code} - {response.text}")
         return None
@@ -151,13 +151,13 @@ def process_device_data(device_data, category, device_id, name, sku):
 
         # Temperature (single value, no sub)
         battery_temp = (device_data.get("auxiliaryBatteryTemperature", 0.0) * 1.8) + 32
-        transformed.append({"measure": "temp", "value": round(battery_temp, 2), "sub": None})
+        transformed.append({"measure": "temp", "value": round(battery_temp, 2), "sub": "pri"})
 
     elif category == "Battery Shunt":
         uname = f"shnt-{device_id[-3:]}"
         # Primary shunt values (sub="pri")
         volts_shnt = device_data.get("batteryVolts", 0.0)
-        amps_shnt = device_data.get("power", 0.0)
+        amps_shnt = device_data.get("current", 0.0)
         watts_shunt = volts_shnt * amps_shnt
         transformed.append({"measure": "volt", "value": round(volts_shnt, 4), "sub": "pri"})
         transformed.append({"measure": "amps", "value": round(amps_shnt, 4), "sub": "pri"})
@@ -177,6 +177,7 @@ def process_device_data(device_data, category, device_id, name, sku):
             "uname": uname
         })
 
+    print(f"Transformed native system load data: {transformed}")
     return transformed
 
 #################### 
@@ -197,8 +198,8 @@ def calculate_system_load(transformed_data):
         shnt_071_volts = next(item for item in transformed_data if item["uname"] == "shnt-071" and item["sub"] == "pri" and item["measure"] == "volt")["value"]
 
         # Derived values
-        load_amps = (shnt_258_amps + mppt_914_amps) - shnt_071_amps
-        load_watts = (shnt_258_watts + mppt_914_watts) - shnt_071_watts
+        load_amps = (-1.0 * ((shnt_258_amps + mppt_914_amps) - shnt_071_amps))
+        load_watts = (-1.0 * ((shnt_258_watts + mppt_914_watts) - shnt_071_watts))
         load_volts = shnt_071_volts
 
         # Add derived device measurements
@@ -210,12 +211,16 @@ def calculate_system_load(transformed_data):
 
         # Add common fields to the derived device
         for item in derived_device:
-            item.update({
-                "uname": "load-001",
-                "name": "RNG-SYST",
-                "category": "Derived",
-                "sku": "RNG-SYST"
-            })
+            try:
+                item.update({
+                    "device_id": "derived-001",  # Placeholder for derived metrics
+                    "uname": "load-001",
+                    "name": "RNG-SYST",
+                    "category": "Derived",
+                    "sku": "RNG-SYST"
+                })
+            except KeyError as e:
+                logger.error(f"Derived data missing keys: {item}. Error: {e}")
 
         print(f"Derived system load data: {derived_device}")
         return derived_device
@@ -228,62 +233,67 @@ def calculate_system_load(transformed_data):
 # PUBLISH TO TIMESTREAM 
 #####################
 def write_to_timestream(combined_data, db, table):
-    """Write data to Timestream."""
+    # Write data to Timestream
+    # Define required keys for validation
+    required_keys = ["device_id", "uname", "sub", "category", "name", "sku", "measure", "value"]
     for entry in combined_data:
         records = []
-
         # Get current time in milliseconds since epoch
         current_time_ms = int(datetime.now().replace(second=0, microsecond=0).timestamp() * 1000)
 
-        for item in entry:
-            records.append({
-                "MeasureName": item["measure"],
-                "MeasureValue": str(item["value"]),
-                "MeasureValueType": "DOUBLE",
-                "Time": str(current_time_ms),  # Use milliseconds since epoch
-                "TimeUnit": "MILLISECONDS",   # Specify time unit explicitly
-                "Dimensions": [
-                    {"Name": "category", "Value": item["category"]},
-                    {"Name": "uname", "Value": item["uname"]},
-                    {"Name": "name", "Value": item["name"]},
-                    {"Name": "sku", "Value": item["sku"]},
-                    {"Name": "sub", "Value": item["sub"] or "null"}  # Use "null" for None values
-                ]
-            })
-       
-        # Log the payload to be sent
-        logger.info("Preparing to write the following records to Timestream:")
-        logger.info(records)
+        for index, entry in enumerate(combined_data):
+            for item in entry:
+                 # Log invalid records
+                if not all(key in item for key in required_keys):
+                    logger.warning(f"Skipping record due to missing keys: {item}")
+                    print(f"Skipping record due to missing keys: {item}")
+                    continue  # Skip invalid records
 
+                records.append({
+                    "MeasureName": item["measure"],
+                    "MeasureValue": str(item["value"]),
+                    "MeasureValueType": "DOUBLE",
+                    "Time": str(current_time_ms),  # Use milliseconds since epoch
+                    "TimeUnit": "MILLISECONDS",
+                    "Dimensions": [
+                        {"Name": "device_id", "Value": item["device_id"]},
+                        {"Name": "uname", "Value": item["uname"]},
+                        {"Name": "sub", "Value": item["sub"]},
+                        {"Name": "category", "Value": item["category"]},
+                        {"Name": "name", "Value": item["name"]},
+                        {"Name": "sku", "Value": item["sku"]},
+                    ]
+                })
+
+    # Log and write records to Timestream
+    logger.info(f"Writing {len(records)} records to Timestream for table: {table}")
+    if records:
         try:
             timestream_client.write_records(
                 DatabaseName=db,
                 TableName=table,
                 Records=records
             )
+            logger.info("Successfully wrote records to Timestream")
         except Exception as e:
-            print(f"Error writing to Timestream: {e}")
+            logger.error(f"Error writing records to Timestream: {e}")
+            if hasattr(e, 'response') and 'RejectedRecords' in e.response['Error']:
+                logger.error(f"RejectedRecords details: {e.response['Error']['RejectedRecords']}")
 
-#################### 
-# PUBLISH TO CLOUDWATCH 
-#####################
-def publish_to_cloudwatch(metric_name, value, unit, dimensions):
-    """Send custom metrics to CloudWatch."""
+####################
+# PUBLISH MULTIPLE METRICS TO CLOUDWATCH
+####################
+def publish_metrics_to_cloudwatch(metrics):
+    """Send multiple custom metrics to CloudWatch in a single request."""
     try:
         cloudwatch_client.put_metric_data(
             Namespace="RenogyMetrics",
-            MetricData=[
-                {
-                    "MetricName": metric_name,
-                    "Dimensions": dimensions,
-                    "Unit": unit,
-                    "Value": value,
-                }
-            ]
+            MetricData=metrics
         )
-        logging.info(f"Published {metric_name} to CloudWatch: {value}")
+        logging.info(f"Published {len(metrics)} metrics to CloudWatch.")
     except Exception as e:
-        logging.error(f"Error publishing metric {metric_name}: {e}")
+        logging.error(f"Error publishing metrics to CloudWatch: {e}")
+
 
 #################### 
 # LAMBDA HANDLER 
@@ -319,17 +329,56 @@ def handler(event, context):
     if combined_data:
         write_to_timestream(combined_data, db, table)
     
-    # Step 5: Publish Voltage Metric
+    # Step 5: Collect Metrics and Publish to CloudWatch
+    cw_metrics = []
     try:
         shnt_071_volt = next(
             item for sublist in combined_data for item in sublist
             if item["uname"] == "shnt-071" and item["measure"] == "volt" and item["sub"] == "pri"
         )["value"]
-        publish_to_cloudwatch(
-            metric_name="MainVoltage",
-            value=shnt_071_volt,
-            unit="None",
-            dimensions=[{"Name": "Device", "Value": "Main"}],
-        )
+        shnt_071_amps = next(
+            item for sublist in combined_data for item in sublist
+            if item["uname"] == "shnt-071" and item["measure"] == "amps" and item["sub"] == "pri"
+        )["value"]
+        mppt_914_amps = next(
+            item for sublist in combined_data for item in sublist
+            if item["uname"] == "mppt-914" and item["measure"] == "amps" and item["sub"] == "pri"
+        )["value"]
+        mppt_914_volts = next(
+            item for sublist in combined_data for item in sublist
+            if item["uname"] == "mppt-914" and item["measure"] == "volt" and item["sub"] == "pri"
+        )["value"]
+
+        # Add metrics to the list
+        cw_metrics.append({
+            "MetricName": "MainVoltage",
+            "Value": shnt_071_volt,
+            "Unit": "None",
+            "Dimensions": [{"Name": "Device", "Value": "Main"}]
+        })
+        cw_metrics.append({
+            "MetricName": "MainCurrent",
+            "Value": shnt_071_amps,
+            "Unit": "None",
+            "Dimensions": [{"Name": "Device", "Value": "Main"}]
+        })
+        cw_metrics.append({
+            "MetricName": "MPPTVoltage",
+            "Value": mppt_914_volts,
+            "Unit": "None",
+            "Dimensions": [{"Name": "Device", "Value": "MPPT"}]
+        })
+        cw_metrics.append({
+            "MetricName": "MPPTCurrent",
+            "Value": mppt_914_amps,
+            "Unit": "None",
+            "Dimensions": [{"Name": "Device", "Value": "MPPT"}]
+        })
+
+        # Publish all metrics in a single call
+        publish_metrics_to_cloudwatch(cw_metrics)
+        print(f"Published {len(cw_metrics)} metrics to CloudWatch.")
+        logging.info (f"Published {len(cw_metrics)} metrics to CloudWatch.")
+        
     except StopIteration:
-        logging.error("Voltage data for shnt-071 not found.")
+        logging.error("Required data for metrics not found.")
